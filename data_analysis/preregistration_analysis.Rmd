@@ -1,0 +1,90 @@
+---
+title: "preregistration_num"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(lubridate)
+library(stringr)
+library(dplyr)
+library(tidyr)
+```
+
+# Study 1 Result 1
+## Output the number of papers on four years, each year consists of three categories (AsPredicted, OSF, and open preregistration)
+```{r}
+year <- rep(c(2018, 2019, 2020, 2021), each=3)
+year <- as.factor(year)
+type <- rep(c('Papers with preregistration on AsPredicted template', 'Papers with preregistration on OSF template', 'Papers with open preregistration'), times=4)
+
+
+Occurrence <- c(1, 0, 0,
+          3, 3, 0,
+          7, 3, 3,
+          5, 6, 1)
+label <- Occurrence
+
+df = data.frame(year=year, type=type, Occurrence=Occurrence, label=label)
+
+df$newtype = str_wrap(df$type, width = 5)
+
+df <- df %>% group_by(newtype, year) %>% 
+  arrange(desc(newtype)) %>%
+  group_by(year) %>%
+  mutate(pos = cumsum(Occurrence) - Occurrence/2) 
+df <- df %>% mutate(label = ifelse(label == 0, NA, label))
+
+
+g <- ggplot(df %>% filter(!is.na(label))) + 
+    geom_bar(aes(fill=newtype, y=Occurrence, x=year), position="stack", stat="identity") +
+    geom_text(aes(x=year, y=pos, label = prettyNum(label, big.mark = ",")), vjust = 2,  size = 1.5) +
+    theme(legend.title = element_blank(), legend.key.height=unit(5, "cm")) +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), 
+            axis.title.x = element_text(vjust=0.5)) +
+  labs(x="Year")
+
+ggsave(g, file="~/Desktop/study_1_vis_1.svg")
+```
+
+# Study 1 Result 2
+## Display the number of preregistration with 'available', 'reproducible' and 'consistency;
+```{r}
+categories <- c("A-priori Description", "Primary hypothesis", "Variables", "Analysis Plan", "Study Plan", "Analysis Script", "Sampling Plan", "Additional Information")
+
+counts_occ <- c(16, 38, 43, 43, 43, 6, 43, 19)
+counts_repl <- c(16, 32, 14, 26, 17, 6, 23, 19)
+counts_cons <- rep(46, 8) - c(30, 28, 35, 26, 11, 40, 15, 27)
+
+counts_percentage_label <- percent(counts_repl / counts_occ)
+
+count_df <- data.frame(preregistered_information=counts_occ, replicable_preregistered_information=counts_repl, consistent_preregistered_information=counts_cons, categories=categories, counts_percentage_label=as.character(counts_percentage_label))
+
+count_df2 <- pivot_longer(count_df, cols=c('preregistered_information', 'replicable_preregistered_information', 'consistent_preregistered_information'), names_to='variable', values_to = "value")
+count_df2$categories = str_wrap(count_df2$categories, width = 10)
+
+count_df2$categories <- factor(count_df2$categories, levels=unique(count_df2$categories))
+count_df2$variable <- factor(count_df2$variable, levels=c('preregistered_information', 'replicable_preregistered_information', 'consistent_preregistered_information') )
+
+count_df2 <- count_df2 %>%
+  mutate(label = as.character(value))
+
+count_df2 <- count_df2 %>%
+  mutate(new_variable_2 = ifelse(variable=="preregistered_information", "Preregistered\ninformation", 
+                               ifelse(variable=="replicable_preregistered_information", "Replicable\npreregistered\ninformation", 
+                                      "Consistent\npreregistered\ninformation")))
+
+count_df2$new_variable = factor(count_df2$new_variable_2, levels=c('Preregistered\ninformation', 'Replicable\npreregistered\ninformation', 'Consistent\npreregistered\ninformation'))
+
+g2 <- ggplot(count_df2, aes(y=value, x=categories, fill=new_variable)) + 
+    geom_col(position="dodge") +
+      labs(x = "Preregistered Information", y = "Occurrence") + 
+    geom_text(aes(y=value, x=categories, label=value), vjust=-0.5, position=position_dodge(0.9), size=1.5) + 
+    theme(legend.title = element_blank(), legend.key.height=unit(5, "cm")) +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+          axis.title.x = element_text(vjust=0.5))
+
+ggsave(g2, file="~/Desktop/study_1_vis_2.svg")
+```
+
+
