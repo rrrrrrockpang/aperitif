@@ -120,12 +120,28 @@ png(filename="questionnaire_result.png", width=800, height=300)
 
 g3 <- ggplot(survey_df, aes(fill=factor(category), y=total, x=newQuestions)) + 
   geom_bar(position="fill", stat="identity") +
+  scale_y_continuous(labels = scales::percent) +
   scale_fill_manual(values=myColors, guide = guide_legend(reverse = TRUE)) +
   coord_flip() + 
   ylab("Percentage") + 
   xlab("Question") +
+  theme_bw() +
   theme(legend.title = element_blank(), legend.position="bottom", legend.box = "horizontal")
 
-ggsave(g3, file="~/Desktop/survey_result.svg")
+ggsave(g3, file="~/Desktop/survey_result.pdf")
 ```
+
+## Post-study check for interface/scenario order
+## Finding non-significant result for potential confounds
+```{r}
+df3 = read.csv("./study.csv")
+df3$Interface = factor(df3$Interface)
+df3$Scenarios = factor(df3$Scenarios)
+df3$Order = factor(df3$Order)
+```
+```{r}
+m = aov(minues ~ Scenarios * Interface, data=df3)
+summary(m)
+```
+
 
