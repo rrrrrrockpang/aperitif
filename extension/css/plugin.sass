@@ -1,0 +1,158 @@
+$card-margin: 5px
+$green: #5cb85c
+$border-color: #4cae4c
+
+.preregistea
+  height: 100%
+  width: 100%
+  border: solid
+  border-width: 1px
+  border-radius: 1px
+  border-color: rgb(204, 204, 204)
+  box-shadow: rgba(0, 0, 0, 0.075) 0px 1px 1px inset
+
+.inputarea
+  border-right: solid 2px
+  border-color: #4cae4c
+  padding: 3px
+  min-height: 100% !important
+
+.preregistea > .container
+  min-height: 100%
+  max-width: 100%
+  min-width: 100%
+  margin: 0
+
+.preregistea > .container > .row
+  margin-bottom: 0 !important
+  min-height: 100% !important
+
+.playground
+  display: flex
+  flex-direction: row
+
+.displayarea
+  display: flex
+  flex-direction: row
+  flex-wrap: wrap
+
+.modal-body
+  word-break: break-word
+
+
+
+/* floating button style */
+.floating-btn
+  position: fixed
+  width: 60px
+  height: 60px
+  bottom: 40px
+  background-color: $green
+  border-color: $border-color
+  color: #FFF
+  border-radius: 50px
+  text-align: center
+  box-shadow: 2px 2px 3px #999
+
+#method-floating-btn
+  right: 40px
+
+#tea-floating-btn
+  right: 100px
+
+
+/* UML Card style */
+.uml-card, .hypothesis-card
+  border: 1px solid black
+  margin: $card-margin
+  text-align: center
+  box-shadow: 2px 2px 3px #999
+
+.card-details
+  padding-left: 8px
+  padding-right: 8px
+  margin-bottom: 0 !important
+
+
+
+/* Form group style */
+//.form-group
+//   margin-bottom: 5px !important
+//
+//.form-group label
+//  margin-bottom: 3px !important
+
+.form-group .container
+  max-width: 100%
+
+#analysis_preregistea .displayarea > .container
+  min-height: 100%
+  max-width: 100%
+  min-width: 100%
+  margin: 0
+
+#analysis_preregistea > .preregistea > .container > .row
+  display: flex !important
+
+#sample_size_preregistea > .preregistea > .container > .row
+  display: flex !important
+
+
+/* Description box */
+.description-box
+  display: flex
+  text-align: center
+  justify-content: center
+  align-items: center
+  margin: auto
+  width: 200px
+  height: 100px
+  background-color: $green
+  border-color: #4cae4c
+  border-radius: 10px
+  box-shadow: 2px 2px 3px #999
+  color: #FFF
+
+//.description-box p
+//  vertical-align: middle
+
+
+input[type=number]
+  width: 60px
+  padding: 2px
+  margin: 2px
+
+.add_category .row
+  margin-bottom: 0 !important
+
+
+//tooltip
+
+.hovercard
+  position: absolute
+  opacity: 0
+  z-index: 1
+  left: 50%
+  top: -90px
+  transform: translateX(-50%)
+
+.hover-item
+  position: relative
+  cursor: pointer
+
+.hover-item:hover .hovercard
+  opacity: 1
+  transition: 0.5s
+  transition-delay: 0.1s
+
+.tooltiptext
+  display: flex
+  flex-direction: column
+  justify-content: flex-start
+  background-color: #0366d6
+  padding: 18px
+  border-radius: 5px
+  color: white
+  line-height: 15px
+  transition: 1s
+  width: 200px

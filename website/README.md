@@ -1,0 +1,1 @@
+This website is deployed on https://preregistration-experiment.herokuapp.com/ as the experiment to test the usefulness of Aperitif.

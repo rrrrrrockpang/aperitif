@@ -1,0 +1,45 @@
+{
+  "name": "Apéritif",
+  "description": "This is Apéritif. Hello World! This extension prompts users to input necessary information of a study, such as variables and hypothesis. It will generate Python and R code as well as an initial method description.",
+  "version": "0.0",
+  "manifest_version": 3,
+  "background": {
+    "service_worker": "background.js"
+  }, 
+  "permissions": ["storage", "activeTab", "scripting"],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://aspredicted.org/create.php",
+        "https://aspredicted.org/create.php?active=1&self_destruct=0"
+      ],
+      "css": [
+        "css/bootstrap-theme.min.css",
+        "css/bootstrap.min.css",
+        "css/temp.css"
+      ],
+      "js": [
+        "lib/jquery-3.6.0.min.js",
+        "lib/d3.min.js",
+        "lib/bootstrap.min.js",
+        "lib/leader-line.min.js",
+        "javascripts/utils.js",
+        "javascripts/variable.js",
+        "javascripts/api.js",
+        "javascripts/construct.js",
+        "javascripts/dependentVariable.js",
+        "javascripts/conditions.js",
+        "javascripts/analysis.js",
+        "javascripts/template.js",
+        "javascripts/floating.js",
+        "javascripts/layout.js",
+        "javascripts/sampleSize.js",
+        "javascripts/content.js"
+      ]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'",
+    "sandbox": "sandbox allow-scripts; script-src 'self' 'https://cdn.jsdelivr.net/npm/bootstrap' 'https://apis.google.com/' 'https://www.gstatic.com/' 'https://*.firebaseio.com' 'https://www.googleapis.com' 'https://ajax.googleapis.com'; object-src 'self'"
+  }
+}
