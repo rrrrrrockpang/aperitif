@@ -1,0 +1,14 @@
+README.rst
+setup.cfg
+setup.py
+bootstrapped/__init__.py
+bootstrapped/bootstrap.py
+bootstrapped/compare_functions.py
+bootstrapped/permutation.py
+bootstrapped/power.py
+bootstrapped/stats_functions.py
+bootstrapped.egg-info/PKG-INFO
+bootstrapped.egg-info/SOURCES.txt
+bootstrapped.egg-info/dependency_links.txt
+bootstrapped.egg-info/requires.txt
+bootstrapped.egg-info/top_level.txt
