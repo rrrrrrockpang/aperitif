@@ -2,7 +2,7 @@
 
 Apéritif is a Chrome extension that scaffolds your preregistration experience with tipcs for statistical analysis, recommendation for statistical tests, visualization for sample size selection, and code/method generation. (under review) 
 
-This is the repository for Apéritif development. However, please refer to OSF research repository if you are interested in all the supplementary materials for our research paper. If you ran into problems, feel free to open an issue, or email [Anonymnous Author for Review] at [Anonymous author's email].
+This is the repository for Apéritif development. However, please refer to [OSF research repository](https://osf.io/tgacn/?view_only=cd81b7c90092458a95c25c49ec469f0f) if you are interested in all the supplementary materials for our research paper. If you ran into problems, feel free to open an issue, or email [Anonymnous Author for Review] at [Anonymous author's email].
 
 In this repository, we have the source code for the Chrome extension that works with AsPredicted.org as well as that for the user evaluation website. 
 
