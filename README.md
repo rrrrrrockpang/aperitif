@@ -1,6 +1,6 @@
 # Apéritif
 
-Apéritif is a Chrome extension that scaffolds your preregistration experience with tipcs for statistical analysis, recommendation for statistical tests, visualization for sample size selection, and code/method generation.
+Apéritif is a Chrome extension that scaffolds your preregistration experience with tipcs for statistical analysis, recommendation for statistical tests, visualization for sample size selection, and code/method generation. (under review)
 
 If you ran into problems, feel free to open an issue, or email [Anonymnous Author for Review] at [Anonymous author's email].
 
