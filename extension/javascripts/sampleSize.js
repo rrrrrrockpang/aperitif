@@ -25,12 +25,6 @@ const y = d3.scaleLinear()
         .domain([0, 1])
         .range([ height, 0 ]);
 
-let zval = normal_quantile(0.05/2) + 0.4*Math.sqrt(5);
-
-
-// // zval = normal_quantile(alpha/sides) + nonctr*Math.sqrt(ss)
-// // power =normal_cdf(zval)
-// // form.power.value = format(power,2)
 const calcPower = (sample, effect, alpha=0.05, two_side=2.0) => {
     // console.log(alpha, two_side, effect, sample);
     effect = 2 * effect.toFixed(3)
@@ -209,92 +203,94 @@ const createPowerChart = (e=0.8) => {
         .attr("y2", y(0.8));
 
     function update(number, confidence=0.05) {
-        d3.selectAll(".power-line").remove();
+        (async () => {
+            d3.selectAll(".power-line").remove();
 
-        let focus = svg
-            .append('g')
-            .append('circle')
-            .style("fill", "none")
-            .attr("class", "power-line")
-            .attr("stroke", "black")
-            .attr('r', 4)
-            .style("opacity", 0)
+            let focus = svg
+                .append('g')
+                .append('circle')
+                .style("fill", "none")
+                .attr("class", "power-line")
+                .attr("stroke", "black")
+                .attr('r', 4)
+                .style("opacity", 0)
 
-        let focusText = svg
-            .append('g')
-            .append('text')
-            .style("opacity", 0)
-            .attr('class', 'power-line')
-            .attr("text-anchor", "left")
-            .attr("alignment-baseline", "middle")
+            let focusText = svg
+                .append('g')
+                .append('text')
+                .style("opacity", 0)
+                .attr('class', 'power-line')
+                .attr("text-anchor", "left")
+                .attr("alignment-baseline", "middle")
 
-        svg.append('rect')
-            .style("fill", "none")
-            .style("pointer-events", "all")
-            .attr('class', 'power-line')
-            .attr('width', width)
-            .attr('height', height)
-            .on('mouseover', mouseover)
-            .on('mousemove', mousemove)
-            .on('mouseout', mouseout);
+            svg.append('rect')
+                .style("fill", "none")
+                .style("pointer-events", "all")
+                .attr('class', 'power-line')
+                .attr('width', width)
+                .attr('height', height)
+                .on('mouseover', mouseover)
+                .on('mousemove', mousemove)
+                .on('mouseout', mouseout);
 
-        const filtered = df(number, confidence);
-        svg.append("path") // Confidence Interval
-            .datum(filtered)
-            .attr("class", "power-line")
-            .attr("fill", "#69b3a2")
-            .attr("fill-opacity", .3)
-            .attr("stroke", "none")
-            .attr("d", d3.area()
-                .x(function (d) {
-                    return x(d.sample)
-                })
-                .y0(function (d) {
-                    return y(d.lower)
-                })
-                .y1(function (d) {
-                    return y(d.higher)
-                })
-            )
+            const filtered = await df(number, confidence);
+            svg.append("path") // Confidence Interval
+                .datum(filtered)
+                .attr("class", "power-line")
+                .attr("fill", "#69b3a2")
+                .attr("fill-opacity", .3)
+                .attr("stroke", "none")
+                .attr("d", d3.area()
+                    .x(function (d) {
+                        return x(d.sample)
+                    })
+                    .y0(function (d) {
+                        return y(d.lower)
+                    })
+                    .y1(function (d) {
+                        return y(d.higher)
+                    })
+                )
 
-        svg.append('g').append("path")
-            .datum(filtered)
-            .attr("class", "power-line")
-            .attr("fill", "none")
-            .attr("stroke", "steelblue")
-            .attr("stroke-width", 1.5)
-            .attr("d", d3.line()
-                .x(function (d) {
-                    return x(d.sample)
-                })
-                .y(function (d) {
-                    return y(d.power)
-                })
-            );
+            svg.append('g').append("path")
+                .datum(filtered)
+                .attr("class", "power-line")
+                .attr("fill", "none")
+                .attr("stroke", "steelblue")
+                .attr("stroke-width", 1.5)
+                .attr("d", d3.line()
+                    .x(function (d) {
+                        return x(d.sample)
+                    })
+                    .y(function (d) {
+                        return y(d.power)
+                    })
+                );
 
-        function mouseover() {
-            focus.style("opacity", 1)
-            focusText.style("opacity", 1)
-        }
+            function mouseover() {
+                focus.style("opacity", 1)
+                focusText.style("opacity", 1)
+            }
 
-        function mousemove(event) {
-            // recover coordinate we need
-            var x0 = x.invert(d3.pointer(event)[0]);
-            var i = bisect(filtered, x0, 1);
-            selectedData = filtered[i]
-            focus
-                .attr("cx", x(+selectedData.sample))
-                .attr("cy", y(+selectedData.power))
-            focusText
-                .html("Size:" + selectedData.sample + "  -  " + "Power:" + Math.round(selectedData.power * 100) / 100)
-                .attr("x", x(+selectedData.sample) + 15)
-                .attr("y", y(+selectedData.power))
-        }
+            function mousemove(event) {
+                // recover coordinate we need
+                var x0 = x.invert(d3.pointer(event)[0]);
+                var i = bisect(filtered, x0, 1);
+                selectedData = filtered[i]
+                focus
+                    .attr("cx", x(+selectedData.sample))
+                    .attr("cy", y(+selectedData.power))
+                focusText
+                    .html("Size:" + selectedData.sample + "  -  " + "Power:" + Math.round(selectedData.power * 100) / 100)
+                    .attr("x", x(+selectedData.sample) + 15)
+                    .attr("y", y(+selectedData.power))
+            }
 
-        function mouseout() {
-            focus.style("opacity", 0)
-            focusText.style("opacity", 0)
-        }
+            function mouseout() {
+                focus.style("opacity", 0)
+                focusText.style("opacity", 0)
+            }
+        })();
     }
 
     if(effectSize === "cohenf"){
@@ -305,59 +301,63 @@ const createPowerChart = (e=0.8) => {
     d3.select("#effectSizeNumber").on("change", function(d) {
         const effectSize = parseFloat($("#effectSizeNumber").val());
         confidenceInterval = parseFloat($("#confidenceInterval").val());
-        console.log(effectSize, confidenceInterval);
-        const powers = df(effectSize, confidenceInterval);
-        let sample_size = 0;
-        for(let i = 0; i < powers.length - 1; i++) {
-            if(powers[i].power < 0.8 && powers[i+1].power > 0.8) {
-                sample_size = powers[i+1].sample;
-                break
+        
+        (async () => {
+            const powers = await df(effectSize, confidenceInterval);
+            let sample_size = 0;
+            for(let i = 0; i < powers.length - 1; i++) {
+                if(powers[i].power < 0.8 && powers[i+1].power > 0.8) {
+                    sample_size = powers[i+1].sample;
+                    break
+                }
             }
-        }
-        studySampleSize = sample_size;
-        studyEffectSize = effectSize;
+            studySampleSize = sample_size;
+            studyEffectSize = effectSize;
+            console.log(powers);
+            if(powers[0].power > 0.8) {
+            $(".sample-size-text-display").html("The effect size is too big.");
+            } else if(studySampleSize === 0) {
+                $(".sample-size-text-display").html("You might want to change to a bigger effect size.");
+            } else {
+                $(".sample-size-text-display").html(`${studySampleSize} participants yield at least a power of 0.80 at the effect size Cohen's <i>d</i> = ${studyEffectSize}.`)
+            }
 
-        if(powers[0].power > 0.8) {
-           $(".sample-size-text-display").html("The effect size is too big.");
-        } else if(studySampleSize === 0) {
-            $(".sample-size-text-display").html("You might want to change to a bigger effect size.");
-        } else {
-            $(".sample-size-text-display").html(`${studySampleSize} participants yield at least a power of 0.80 at the effect size Cohen's <i>d</i> = ${studyEffectSize}.`)
-        }
+            $(".sample-size-text-display").show();
 
-        $(".sample-size-text-display").show();
-
-        let number = d3.select("#effectSizeNumber").property("value");
-        update(parseFloat(number), confidenceInterval);
+            let number = d3.select("#effectSizeNumber").property("value");
+            update(parseFloat(number), confidenceInterval);
+        })();
     })
 
     d3.select("#confidenceInterval").on("change", function(d) {
         const effectSize = parseFloat($("#effectSizeNumber").val());
         confidenceInterval = parseFloat($("#confidenceInterval").val());
-        console.log(effectSize, confidenceInterval);
-        const powers = df(effectSize, confidenceInterval);
-        let sample_size = 0;
-        for(let i = 0; i < powers.length - 1; i++) {
-            if(powers[i].power < 0.8 && powers[i+1].power > 0.8) {
-                sample_size = powers[i+1].sample;
-                break
+        
+        (async () => {
+            const powers = await df(effectSize, confidenceInterval);
+            let sample_size = 0;
+            for(let i = 0; i < powers.length - 1; i++) {
+                if(powers[i].power < 0.8 && powers[i+1].power > 0.8) {
+                    sample_size = powers[i+1].sample;
+                    break
+                }
             }
-        }
-        studySampleSize = sample_size;
-        studyEffectSize = effectSize;
+            studySampleSize = sample_size;
+            studyEffectSize = effectSize;
 
-        if(powers[0].power > 0.8) {
-           $(".sample-size-text-display").html("The effect size is too big.");
-        } else if(studySampleSize === 0) {
-            $(".sample-size-text-display").html("You might want to change to a bigger effect size.");
-        } else {
-            $(".sample-size-text-display").html(`${studySampleSize} participants yield at least a power of 0.80 at the effect size Cohen's <i>d</i> = ${studyEffectSize}.`)
-        }
+            if(powers[0].power > 0.8) {
+            $(".sample-size-text-display").html("The effect size is too big.");
+            } else if(studySampleSize === 0) {
+                $(".sample-size-text-display").html("You might want to change to a bigger effect size.");
+            } else {
+                $(".sample-size-text-display").html(`${studySampleSize} participants yield at least a power of 0.80 at the effect size Cohen's <i>d</i> = ${studyEffectSize}.`)
+            }
 
-        $(".sample-size-text-display").show();
+            $(".sample-size-text-display").show();
 
-        let number = d3.select("#effectSizeNumber").property("value");
-        update(parseFloat(number), confidenceInterval);
+            let number = d3.select("#effectSizeNumber").property("value");
+            update(parseFloat(number), confidenceInterval);
+        })();
     })
 
     d3.selectAll(".standard-input").on("change", function(d) {
@@ -371,29 +371,31 @@ const createPowerChart = (e=0.8) => {
         const effectSize = d3.select(".effect-radio input[type='radio']:checked").property("value");
         $("#effectSizeNumber").val(effectSize);
         confidenceInterval = parseFloat($("#confidenceInterval").val());
-        const powers = df(effectSize, confidenceInterval);
-        let sample_size = 0;
-        for(let i = 0; i < powers.length - 1; i++) {
-            if(powers[i].power < 0.8 && powers[i+1].power > 0.8) {
-                sample_size = powers[i+1].sample;
-                break
+        
+        (async () => {
+            const powers = await df(parseFloat(effectSize), confidenceInterval);
+            let sample_size = 0;
+            for(let i = 0; i < powers.length - 1; i++) {
+                if(powers[i].power < 0.8 && powers[i+1].power > 0.8) {
+                    sample_size = powers[i+1].sample;
+                    break
+                }
             }
-        }
-        studySampleSize = sample_size;
-        studyEffectSize = effectSize;
+            studySampleSize = sample_size;
+            studyEffectSize = effectSize;
 
-        if(powers[0].power > 0.8) {
-           $(".sample-size-text-display").html("The effect size is too big.");
-        } else if(studySampleSize === 0) {
-            $(".sample-size-text-display").html("You might want to change to a bigger effect size.");
-        } else {
-            $(".sample-size-text-display").html(`${studySampleSize} participants yield at least a power of 0.80 at the effect size Cohen's <i>d</i> = ${studyEffectSize}.`)
-        }
+            if(powers[0].power > 0.8) {
+            $(".sample-size-text-display").html("The effect size is too big.");
+            } else if(studySampleSize === 0) {
+                $(".sample-size-text-display").html("You might want to change to a bigger effect size.");
+            } else {
+                $(".sample-size-text-display").html(`${studySampleSize} participants yield at least a power of 0.80 at the effect size Cohen's <i>d</i> = ${studyEffectSize}.`)
+            }
 
-        $(".sample-size-text-display").show();
+            $(".sample-size-text-display").show();
 
-        update(parseFloat(effectSize), confidenceInterval);
-
+            update(parseFloat(effectSize), confidenceInterval);
+            })();
         // update(parseFloat(number));
     })
 
@@ -428,21 +430,38 @@ const createPowerChart = (e=0.8) => {
 
 // helper
 var bisect = d3.bisector(function(d) { return d.sample; }).left;
-
-
-const df = (effectSize, confidence = 0.05, alpha=0.05) => {
-    effectSize = effectSize/2;
-    const lower_sample = 5, higher_sample = 100;
-    let data = [];
-    for(let i = lower_sample; i < higher_sample; i++) {
-        let obj = {};
-        obj.sample = i;
-        obj.power = calcPower(i, effectSize, alpha);
-        obj.lower = calcPower(i, effectSize - confidence, alpha);
-        obj.higher = calcPower(i, effectSize + confidence, alpha);
-        data.push(obj);
+const API_SAMPLE_URL = 'http://127.0.0.1:5555/getSamples'
+const decideSamples = async (effectSize, confidence, alpha, methodName) => {
+    const input = {
+        "effectSize": effectSize,
+        "confidence": confidence,
+        "alpha": alpha,
+        "method": methodName
     }
-    return data;
+    console.log(input);
+    const response = await fetch(API_SAMPLE_URL, {
+        method: "POST", 
+        mode: 'cors',
+        cache: 'no-cache',
+        credentials: 'same-origin',
+        body: JSON.stringify(input),
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    });
+
+    if(!response.ok) {
+        alert("Error: Something happened in the backend."); 
+        const message = `An error has occured with sampling: ${response.status}`;
+        throw new Error(message);
+    }
+
+    let result = await response.json();
+    return result;
+}
+
+const df = async (effectSize, confidence = 0.05, alpha=0.05) => { // TODO: add a condition statement
+    const result = await decideSamples(effectSize, confidence, alpha, method.method);
+    return result['data'];
 }
 
 const updateEffectSize = (effectSize) => {

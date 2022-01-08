@@ -1,4 +1,5 @@
 from flask import Flask, url_for, request, jsonify, render_template
+from statsmodels.stats.power import TTestPower, TTestIndPower, FTestAnovaPower, FTestPower
 from flask_cors import CORS
 from flask_mongoengine import MongoEngine
 import tea 
@@ -153,6 +154,43 @@ def get_method():
     data = json.loads(request.data)
     methods = run_tea_code(data)
     return jsonify({'methods': methods})
+
+
+@app.route("/getSamples", methods=["GET", "POST"])
+def get_sample():
+    data = json.loads(request.data)
+    effect_size = data["effectSize"]
+    alpha = data["alpha"]
+    confidence = data['confidence']
+    method = data["method"]
+    lower, higher = 5, 100
+    lst = []
+    for point in range(lower, higher + 1):
+        lst.append({
+            "sample": point,
+            "power": calc_power(point, effect_size, alpha, method),
+            "lower": calc_power(point, effect_size - confidence, alpha, method),
+            "higher": calc_power(point, effect_size + confidence, alpha, method)
+        })
+    return jsonify({'data': lst})
+
+
+def calc_power(sample_size, effect_size, alpha, method):
+    if method == "Paired-samples t-test" or method == "Wilcoxon signed-rank test":
+        return TTestPower().power(effect_size=effect_size, 
+                                    nobs=sample_size, 
+                                    alpha=alpha, alternative="larger")
+    elif method == "Independent samples t-test" or method == "Mann-Whitney U test" or method == "Welch's t-test":
+        return TTestIndPower().power(effect_size=effect_size, 
+                                    nobs1=sample_size, 
+                                    alpha=alpha, alternative="larger")
+    elif method == "One-way ANOVA" or method == "Kruskal-Wallis test":
+        return FTestAnovaPower().power(effect_size=effect_size, 
+                                    nobs=sample_size, 
+                                    alpha=alpha, k_groups=k_groups) # TODO: Figure out this k_groups
+    elif method == "One-way repeated measures ANOVA" or method == "Friedman test":
+        return FTestPower().power(effect_size=effect_size,
+                                    alpha=alpha, df_num=df_num, ncc=0)
 
 
 #### Push to Github ###
