@@ -1,6 +1,6 @@
 # Apéritif
 
-A demo will be online very soon before the CHI presentation. Link will be here soon. Stay tuned. 
+A demo will be online very soon for CHI. Link will be here soon. Stay tuned. 
 
 Apéritif is a Chrome extension that scaffolds your preregistration experience with tipcs for statistical analysis, recommendation for statistical tests, visualization for sample size selection, and code/method generation. (under review) 
 
