@@ -4,11 +4,11 @@
 
 Apéritif is a research prototype that builds on top of the [AsPredicted](https://aspredicted.org/) preregistration template. The core idea is an initial attempt to connect preregisteration to later experimental stages such as data analysis and methods descriptions, using existing study design tools such as [Tea](https://github.com/tea-lang-org/tea-lang) and [Touchstone2](https://www.touchstone2.org/). 
 
-While it can be used for simple study designs, Apéritif remains a prototype that can be used to answer additional research questions in the future.  Note that Apértif does have several limitations stated in our paper (e.g., only support simple experiments with one independent variable). How to best formalize complex hypotheses, especially during the preregistration stage, is still under [exploration](https://arxiv.org/pdf/2104.02712.pdf). 
+While it can be used for simple study designs, Apéritif remains a prototype that can be used to answer additional research questions in the future.  Note that Apértif does have several limitations stated in our paper (e.g., only supports simple experiments with one independent variable). How to best formalize complex hypotheses, especially during the preregistration stage, is still under [exploration](https://arxiv.org/pdf/2104.02712.pdf). 
 
-This is the code repository for Apéritif development. However, please refer to [OSF research repository](https://osf.io/tgacn/?view_only=cd81b7c90092458a95c25c49ec469f0f) if you are interested in the supplementary materials for our research paper. If you ran into problems, feel free to open an issue, or email ypang2@cs.washington.edu.
+This is the code repository for Apéritif development. However, please refer to the [OSF research repository](https://osf.io/tgacn/?view_only=cd81b7c90092458a95c25c49ec469f0f) if you are interested in the supplementary materials for our research paper. If you run into problems, feel free to open an issue, or email ypang2@cs.washington.edu.
 
-You can try it on this [demo website](https://aperitif-prototype.herokuapp.com/). At the end of the preregistration, you can log in to your Github and Apéritif will create a new repository named "Aperitif-Preregistration-Demo". So be sure to check it out afterward. In the demo, we replicated the AsPredicted interface solely for the demonstration purpose. If you intend to use AsPredicted developed by the Wharton Credibility Lab, please go to the official website: https://aspredicted.org/!
+You can try it on this [demo website](https://aperitif-prototype.herokuapp.com/). At the end of the preregistration, you can log in to your Github and Apéritif will create a new repository named "Aperitif-Preregistration-Demo". So be sure to check it out afterward. In the demo, we replicated the AsPredicted interface solely for demonstration purposes. If you intend to use AsPredicted developed by the Wharton Credibility Lab, please go to the official website: https://aspredicted.org/!
 
 
 ## Backend
@@ -17,7 +17,7 @@ You can try it on this [demo website](https://aperitif-prototype.herokuapp.com/)
 
 * To run the backend server, make sure you have Python 3 and flask installed on your computer. Additionally, you need [tealang](https://tea-lang.org/) for statistical analysis and [statsmodel](https://www.statsmodels.org/) for power analysis. 
 
-* You also need to configure your github account with your username, repo, and personal access [token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).
+* You also need to configure your Github account with your username, repo, and personal access [token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).
 
 * Update both MongoDB and GitHub information in `main.py`
 
