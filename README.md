@@ -1,18 +1,21 @@
 # Apéritif
 
-A demo will be online very soon before the CHI presentation. Link will be here soon. Stay tuned. 
+## [WIP] Apéiritf: Scaffolding Preregistration to Automatically Generate Analysis Code and Methods Descriptions
 
-Apéritif is a Chrome extension that scaffolds your preregistration experience with tipcs for statistical analysis, recommendation for statistical tests, visualization for sample size selection, and code/method generation. (under review) 
+Apéritif is a research prototype that builds on top of the [AsPredicted](https://aspredicted.org/) preregistration template. The core idea is an initial attempt to connect preregisteration to later experimental stages such as data analysis and methods descriptions, using existing study design tools such as [Tea](https://github.com/tea-lang-org/tea-lang) and [Touchstone2](https://www.touchstone2.org/). 
 
-This is the repository for Apéritif development. However, please refer to [OSF research repository](https://osf.io/tgacn/?view_only=cd81b7c90092458a95c25c49ec469f0f) if you are interested in all the supplementary materials for our research paper. If you ran into problems, feel free to open an issue, or email [Anonymnous Author for Review] at [Anonymous author's email].
+While it can be used for simple study designs, Apéritif remains a prototype that can be used to answer additional research questions in the future.  Note that Apértif does have several limitations stated in our paper (e.g., only support simple experiments with one independent variable). How to best formalize complex hypotheses, especially during the preregistration stage, is still under [exploration](https://arxiv.org/pdf/2104.02712.pdf). 
 
-In this repository, we have the source code for the Chrome extension that works with AsPredicted.org as well as that for the user evaluation website. 
+This is the code repository for Apéritif development. However, please refer to [OSF research repository](https://osf.io/tgacn/?view_only=cd81b7c90092458a95c25c49ec469f0f) if you are interested in the supplementary materials for our research paper. If you ran into problems, feel free to open an issue, or email ypang2@cs.washington.edu.
+
+You can try it on this [demo website](https://aperitif-prototype.herokuapp.com/). At the end of the preregistration, you can log in to your Github and Apéritif will create a new repository named "Aperitif-Preregistration-Demo". So be sure to check it out afterward. In the demo, we replicated the AsPredicted interface solely for the demonstration purpose. If you intend to use AsPredicted developed by the Wharton Credibility Lab, please go to the official website: https://aspredicted.org/!
+
 
 ## Backend
 
 * The backend server of Apéritif is in Python with [Flask](https://flask.palletsprojects.com/en/2.0.x/).
 
-* To run the backend server, make sure you have Python 3 and flask installed on your computer. Additionally, you need [tealang](https://tea-lang.org/). 
+* To run the backend server, make sure you have Python 3 and flask installed on your computer. Additionally, you need [tealang](https://tea-lang.org/) for statistical analysis and [statsmodel](https://www.statsmodels.org/) for power analysis. 
 
 * You also need to configure your github account with your username, repo, and personal access [token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).
 
@@ -55,36 +58,26 @@ Clone this repository or download the zip file
   <img src="./images/access.png" width="350">
 * Start use Apéritif to preregister your first study
 
+## Related Work
 
-## Deploy the website
+We appreciate the inspiration from many great study design tools/tutorials. More projects about experiment design and automation include: 
+* [Tea](https://dl.acm.org/doi/10.1145/3332165.3347940) (automatically detect statistical tests in Python)
 
-The website is deployed [here](https://preregistration-experiment.herokuapp.com/) by Heroku. We stored the input data in [MongoDB](https://docs.mongodb.com/guides/server/drivers/). We implemented the website just because users might have concern/conflict with creating a (new) AsPredicted account and downloading unwanted Chrome extension. We simply injected our JS, CSS, HTML code to [AsPredicted](https://aspredicted.org/) interface. The logic are the same in the Chrome extension itself at the `extension` folder. 
+* [Tisane](https://homes.cs.washington.edu/~rjust/publ/tisane_chi_2022.pdf) (express and infer more complex statistical models, hopefully as future work to extend Apéritif)
 
-#### Start the app locally
+* [Statsplorer](https://dl.acm.org/doi/10.1145/2702123.2702347) (visualize the data analysis process with data)
 
-```
-cd ./website
-heroku local:start
-```
+* [Touchstone2](https://www.touchstone2.org/) (explore tradeoffs for within experimental design)
 
-If you run into issue, please see https://devcenter.heroku.com/articles/heroku-local#run-your-app-locally-using-the-heroku-local-command-line-tool, or contact the author. 
+* [StasPlayground](https://dl.acm.org/doi/10.1145/3027063.3052970) (manipulate visualization to see effects on inferential statistics)
 
-#### Create a Heroku app
+* [Hypothesis Formalization](https://arxiv.org/pdf/2104.02712.pdf) (how people formalize hypothesis for experiments)
 
-You can also deploy our website and see how it works remote, or simply go to our website from above. 
+* [Designing for Preregistration](https://www.semanticscholar.org/paper/Designing-for-Preregistration%3A-A-User-Centered-Pu-Zhu/7557dcc3d7e0bad7bbad0644d22690136e40d87c) (a user-centered perspective to design for preregistration)
 
-```
-heroku create
+* [Argus](https://www.semanticscholar.org/paper/Argus%3A-Interactive-a-priori-Power-Analysis-Wang-Eiselmayer/5ca94c6b7198768f7cd7f295ff2a512114b1f6af) (support interactive exploration of a-priori analysis)
 
-# Rename is necessary
-heroku rename heroku NAME
+* [Designing, Running, and Analyzing Experiments](https://www.coursera.org/learn/designexperiments), and also the great [Quantitative Methods in Information Science](https://www.washington.edu/students/crscat/insc.html) at UW, which inspired this project. Part of the class materials are summarized [here](http://depts.washington.edu/acelab/proj/Rstats/index.html) in 2022.
 
-git push heroku main
-```
+Please open an Github issue if important papers and projects are missed! 
 
-If you run into any issue, see https://devcenter.heroku.com/articles/git.
-
-
-## Other
-
-This repository also contains our preregistration on OSF (anonymous for peer review process as it contains author's identifiable information) and AsPredicted (public now). It also contains user survey questions as data analysis code. Please don't hesitate to contact the author (anonynous for peer review) if you need any question.
