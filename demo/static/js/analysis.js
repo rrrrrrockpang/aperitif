@@ -95,11 +95,11 @@ const addAssumptionModal = (body) => {
                     </div>
                     <div class="form-group">
                         <input type="checkbox" id="assumption-independence" name="independence">
-                        <label for="assumption-independence">Independence</label><br>
+                        <label for="assumption-independence"><a href="https://www.statisticshowto.com/assumption-of-independence/" target="_blank">Independence</a></label> <span class="glyphicon glyphicon-info-sign" data-toggle="tooltip" title="The assumption of independence means that your data isn’t connected in any way"></span><br>
                         <input type="checkbox" id="assumption-normality" name="normality">
-                        <label for="assumption-normality">Normality</label><br>
+                        <label for="assumption-normality"><a href="https://www.statisticshowto.com/assumption-of-normality-test/" target="_blank">Normality</a></label> <span class="glyphicon glyphicon-info-sign" data-toggle="tooltip" title="The assumption of independence means that your data roughly fits a bell curve shape."></span><br>
                         <input type="checkbox" id="assumption-equalvariance" name="equalvariance">
-                        <label for="assumption-equalvariance">Equal Variance</label><br>
+                        <label for="assumption-equalvariance"><a href="https://www.statisticshowto.com/homoscedasticity/" target="_blank">Equal Variance</a></label> <span class="glyphicon glyphicon-info-sign" data-toggle="tooltip" title="The assumption of equal variance (homoscedasticity) means that different samples have the same variance."></span><br>
                     </div>
                   </div>
                   <div class="modal-footer">
@@ -235,6 +235,9 @@ const updateVariableInAnalysis = (displayArea, variables) => {
 
 const addListenerToGenerateHypothesis = (methodDisplay, dv, iv, meanOrMedian, method) => {
     methodDisplay.find("button").on("click", function() {
+        if(!confirm("Please make sure you'd like to generate hypothesis based on this study design.")) {
+            return;
+        }
         if(iv.type === "nominal") {
             // Comparison relationship
             // Check whether the hypothesis test is two sided
@@ -259,6 +262,16 @@ const addListenerToGenerateHypothesis = (methodDisplay, dv, iv, meanOrMedian, me
                 "two_side": twoSide,
                 "categories": [cat1, cat2]
             }
+            if(iv.categories.length > 2) {
+                $("#cohen").text("f");
+                $("#small-effect").val(0.1);
+                $("#small-effect-label").text(0.1);
+                $("#medium-effect").val(0.25);
+                $("#medium-effect-label").text(0.25);
+                $("#large-effect").val(0.4);
+                $("#large-effect-label").text(0.4);
+                cohen = "f"
+            }
         } else {
             // Correlation relationship. Ordinal variable will always use non-parametric Kendall's tau/Spearman's rho
             let positive = false;
@@ -268,6 +281,11 @@ const addListenerToGenerateHypothesis = (methodDisplay, dv, iv, meanOrMedian, me
                 'iv_type' : iv.type,
                 'positive': positive
             }
+
+            
+            $("#sample-form-group").hide();
+            $("#correlation-body").show();
+            $("#pilot-study").hide();
         }
 
         updateTeaCodeHypothesis(dv, iv, relKey);
@@ -333,6 +351,7 @@ const updateHypothesisFormArea = (inputArea) => {
                             </div>
                         </div>`);
     inputArea.append(methodDisplay);
+    $("#meanorMedianinHypothesis").text(meanOrMedian);
     addListenerToGenerateHypothesis(methodDisplay, dv, iv, meanOrMedian, method);
 }
 
@@ -343,7 +362,7 @@ const createHypothesisIVIsNominal = (dv, iv, method, meanOrMedian) => {
             <div class="form-group">
                 <label for='name' class='col-form-label'>Hypothesis:</label>
                 <div class="form-inline">
-                    <label>The ${meanOrMedian} value of</label>
+                    <label>The <span id="meanorMedianinHypothesis">${meanOrMedian}</span> value of</label>
                     <label class="dv-in-form"></label>
                     <label>in</label>
                     <select class="iv-group-custom-select-1">

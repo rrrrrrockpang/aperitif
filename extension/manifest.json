@@ -16,24 +16,27 @@
       "css": [
         "css/bootstrap-theme.min.css",
         "css/bootstrap.min.css",
+        "css/bootstrap-grid.min.css",
         "css/temp.css"
       ],
       "js": [
         "lib/jquery-3.6.0.min.js",
         "lib/d3.min.js",
         "lib/bootstrap.min.js",
+        "lib/bootstrap.bundle.min.js",
         "lib/leader-line.min.js",
-        "javascripts/utils.js",
+        "javascripts/global.js",
         "javascripts/variable.js",
+        "javascripts/utils.js",
+        "javascripts/instruction.js",
+        "javascripts/update.js",
+        "javascripts/dv.js",
+        "javascripts/iv.js",
         "javascripts/api.js",
-        "javascripts/construct.js",
-        "javascripts/dependentVariable.js",
-        "javascripts/conditions.js",
+        "javascripts/sample.js",
         "javascripts/analysis.js",
         "javascripts/template.js",
         "javascripts/floating.js",
-        "javascripts/layout.js",
-        "javascripts/sampleSize.js",
         "javascripts/content.js"
       ]
     }

@@ -1,28 +1,30 @@
-from flask import Flask, url_for, request, jsonify, render_template
-from statsmodels.stats.power import TTestPower, TTestIndPower, FTestAnovaPower, FTestPower
-from flask_cors import CORS
-from flask_mongoengine import MongoEngine
-import tea 
-import csv
-import json
-import logging
+from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask_cors import CORS, cross_origin
+from statsmodels.stats.power import TTestPower, TTestIndPower, FTestAnovaPower, FTestPower, NormalIndPower
+from flask_dance.contrib.github import make_github_blueprint, github
+import json, requests, logging
 import base64
-import requests
-import os
-import uuid
-import http
 
 app = Flask(__name__)
 CORS(app)
+app.config["CACHE_TYPE"] = "null"
+app.config["SECRET_KEY"] = "aperitif"  
+
+# Update this to deploy
+github_blueprint = make_github_blueprint(
+    client_id='', 
+    client_secret='', 
+    scope='repo,user',
+    redirect_url="/default")
+app.register_blueprint(github_blueprint, url_prefix='/github_login')
 
 ## MongoDB configuration
 # TODO: Need to define your own MongoDB URI
 # See MongoDB documentation: https://docs.mongodb.com/guides/server/drivers/
 # See MongoEngine that was implemented here: http://mongoengine.org/
 DB_URI = ""
-
 app.config['MONGODB_HOST'] = DB_URI
-app.config["CACHE_TYPE"] = "null"
+
 db = MongoEngine()
 db.init_app(app)
 preregis_input = None
@@ -39,18 +41,59 @@ TOKEN = ""
 DATA_DIR = "static"
 HEADER_CSV = "header.csv" 
 
-@app.route("/")
+# prevent cached responses
+if app.config["DEBUG"]:
+    @app.after_request
+    def after_request(response):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, public, max-age=0"
+        response.headers["Expires"] = 0
+        response.headers["Pragma"] = "no-cache"
+        return response
+
+def create_new_repo():
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/vnd.github.v3+json",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:50.0) Gecko/20100101 Firefox/50.0",
+        "Authorization": "token {}".format(github_blueprint.token['access_token'])
+    }
+    data = {
+        "name": "Aperitif Preregistration Demo", 
+        "private": "false",
+        "has_wiki": "true"
+    }
+    response = github.post(headers=headers, json=data, url="/user/repos")
+    data = response.json()
+
+    if response.ok: return True, response.json()
+    return False, ""
+
+@app.route("/github", methods=['GET', 'POST'])
+def connect_to_github():
+    if not github.authorized:
+        return jsonify({'success': 'login'})
+    success, response = create_new_repo()
+    if success:
+        return jsonify({'success': 'true', 'owner': response['owner']['login'], 'name': response['name']})
+    else:
+        return jsonify({'success': 'false'})
+
+
+@app.route('/hello_world')
 def hello_world():
     return "<p>Hello, World!</p>"
 
+@app.route("/")
+def index():
+    return render_template("index.html")
 
-@app.after_request
-def after_request(response):
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, public, max-age=0"
-    response.headers["Expires"] = 0
-    response.headers["Pragma"] = "no-cache"
-    return response
-
+@app.route("/loginHere")
+def loginHere():
+    return redirect(url_for("github.login"))
+    # return '''<a href="javascript:window.open('','_self').close();">Close Tab</a>'''
+@app.route("/default")
+def default():
+    return '''<p>You are logged in. Please <a href="javascript:window.open('','_self').close();">close this tab</a>, and click "Push Your Artifacts to Github" in the previous page.</p>'''
 
 #### Select Test ####
 def get_variables(input):
@@ -115,7 +158,6 @@ def generate_dataset_header(variables):
     with open("{}/{}".format(DATA_DIR, HEADER_CSV), 'w', encoding='UTF8') as f:
         writer = csv.writer(f)
         writer.writerow(headers)
-    
 
 def run_tea_code(input):
     """
@@ -147,35 +189,7 @@ def run_tea_code(input):
         results.append(tea.hypothesize(var_pair, var_rel))
     return results
 
-
-@app.route("/getMethod", methods=["GET", "POST"])
-def get_method():
-    # print(request.data)
-    data = json.loads(request.data)
-    methods = run_tea_code(data)
-    return jsonify({'methods': methods})
-
-
-@app.route("/getSamples", methods=["GET", "POST"])
-def get_sample():
-    data = json.loads(request.data)
-    effect_size = data["effectSize"]
-    alpha = data["alpha"]
-    confidence = data['confidence']
-    method = data["method"]
-    lower, higher = 5, 100
-    lst = []
-    for point in range(lower, higher + 1):
-        lst.append({
-            "sample": point,
-            "power": calc_power(point, effect_size, alpha, method),
-            "lower": calc_power(point, effect_size - confidence, alpha, method),
-            "higher": calc_power(point, effect_size + confidence, alpha, method)
-        })
-    return jsonify({'data': lst})
-
-
-def calc_power(sample_size, effect_size, alpha, method):
+def calc_power(sample_size, effect_size, alpha, method, k_groups):
     if method == "Paired-samples t-test" or method == "Wilcoxon signed-rank test":
         return TTestPower().power(effect_size=effect_size, 
                                     nobs=sample_size, 
@@ -189,14 +203,112 @@ def calc_power(sample_size, effect_size, alpha, method):
                                     nobs=sample_size, 
                                     alpha=alpha, k_groups=k_groups) # TODO: Figure out this k_groups
     elif method == "One-way repeated measures ANOVA" or method == "Friedman test":
-        return FTestPower().power(effect_size=effect_size,
-                                    alpha=alpha, df_num=df_num, ncc=0)
+        # definition of df_num, df_denom: https://courses.lumenlearning.com/introstats1/chapter/the-f-distribution-and-the-f-ratio/
+        # Implementation: https://stackoverflow.com/questions/64420111/how-can-i-get-the-ftest-solve-power-methods-in-statsmodel-to-compute-power-for
+        return FTestPower().solve_power(effect_size=effect_size,
+                                    alpha=alpha, df_num=sample_size-k_groups, nobs=sample_size, df_denom=(k_groups), ncc=0)
+    else:
+        return NormalIndPower().power(effect_size=effect_size, alpha=alpha, nobs1=sample_size, ratio=1, alternative="larger")
+    
 
+@app.route("/getMethod", methods=["GET", "POST"])
+def get_method():
+    # print(request.data)
+    data = json.loads(request.data)
+    methods = run_tea_code(data)
+    return jsonify({'methods': methods})
+
+@app.route("/getSamples", methods=["GET", "POST"])
+def get_sample():
+    data = json.loads(request.data)
+    effect_size = data["effectSize"]
+    alpha = data["alpha"]
+    confidence = data['confidence']
+    method = data["method"]
+    k_groups = data['nlevels']
+    lower, higher = 5, 300
+    lst = []
+    for point in range(lower, higher + 1):
+        lst.append({
+            "sample": point,
+            "power": calc_power(point, effect_size, alpha, method, k_groups),
+            "lower": calc_power(point, effect_size - confidence, alpha, method, k_groups),
+            "higher": calc_power(point, effect_size + confidence, alpha, method, k_groups)
+        })
+    
+    return jsonify({'data': lst})
+
+
+def push_file(owner, name, text, file):
+    string_bytes = text.encode("utf-8")
+    base64_bytes = base64.b64encode(string_bytes)
+    base64_string = base64_bytes.decode("utf-8")
+
+
+    query_url = "https://api.github.com/repos/{}/{}/contents/{}".format(
+        owner, name, file
+    )
+
+    headers = {
+        'Authorization': 'Bearer {}'.format(github_blueprint.token['access_token']), 
+        'Content-Type': 'application/json'
+    }
+
+    data = {
+        "message": "Initialize Preregistration with Aperitif",
+        "content": base64_string
+    }
+    r = requests.put(query_url, headers=headers, data=json.dumps(data))
+    # Print response message
+    print(r.json())
+
+
+def get_preregistration_str(data):
+    return "## 2) **Hypothesis** What's the main question being asked or hypothesis being tested in this study?   \n{}   \n".format(data['question_1']) + \
+    "## 3) **Dependent variable** Describe the key dependent variable(s) specifying how they will be measured.   \n{}   \n".format(data['question_2']) + \
+    "## 4) **Conditions** How many and which conditions will participants be assigned to?   \n{}   \n".format(data['question_3']) + \
+    "## 5) **Analyses** Specify exactly which analyses you will conduct to examine the main question/hypothesis.   \n{}   \n".format(data['question_4']) + \
+    "## 6) **Outliers** and Exclusions Describe exactly how outliers will be defined and handled, and your precise rule(s) for excluding observations.   \n{} \n".format(data['question_5']) + \
+    "## 7) **Sample Size** How many observations will be collected or what will determine sample size?   \n{} \n".format(data['question_6']) + \
+    "## 8) **Other** Anything else you would like to pre-register?   \n{} \n".format(data['question_7'])
+
+
+def get_python_code(data):
+    return data['python_code']
+
+
+def get_r_code(data):
+    return data['r_code']
+
+
+def get_method_description(data):
+    return data['text']
+
+
+def push_to_github(data):
+    logging.warning("Pushing to Github ...")
+    preregistration = data['preregistration']
+    code = data["code"]
+    text = data["text"]
+    owner = data['owner']
+    name = data['name']
+    
+    push_file(owner, name, get_preregistration_str(preregistration), 'preregistration.md')
+    push_file(owner, name, get_python_code(code), 'starter.py')
+    push_file(owner, name, get_r_code(code), "starter.R")
+    push_file(owner, name, get_method_description(text), "method.md")
+
+
+@app.route("/push", methods=["PUT"])
+def push():
+    data = json.loads(request.data)
+    push_to_github(data)
+    return jsonify({'status': '200'})
 
 #### Push to Github ###
 # Construct preregistration class that holds necessary information
-# We push all the information to github
-# Users can also push the pdf upstream
+# Users can also push the pdf upstream 
+# and information to MongoDB
 class Preregistration(db.Document):
     uuid: str = db.StringField()
     question_1: str = db.StringField()
@@ -323,71 +435,5 @@ def create_record(data):
 
     return jsonify({'status': http.HTTPStatus.OK})
 
-
-def push_file(text, file):
-    string_bytes = text.encode("utf-8")
-    base64_bytes = base64.b64encode(string_bytes)
-    base64_string = base64_bytes.decode("utf-8")
-
-    query_url = "https://api.github.com/repos/{}/{}/contents/{}".format(
-        OWNER, REPO, file
-    )
-
-    headers = {
-        'Authorization': 'Bearer {}'.format(TOKEN), 
-        'Content-Type': 'application/json'
-    }
-
-    data = {
-        "message": "Initialize Preregistration with Aperitif",
-        "content": base64_string
-    }
-    r = requests.put(query_url, headers=headers, data=json.dumps(data))
-    # Print response message
-    print(r.json())
-
-
-def get_preregistration_str(data):
-    return "## 2) **Hypothesis** What's the main question being asked or hypothesis being tested in this study?   \n{}   \n".format(data['question_1']) + \
-    "## 3) **Dependent variable** Describe the key dependent variable(s) specifying how they will be measured.   \n{}   \n".format(data['question_2']) + \
-    "## 4) **Conditions** How many and which conditions will participants be assigned to?   \n{}   \n".format(data['question_3']) + \
-    "## 5) **Analyses** Specify exactly which analyses you will conduct to examine the main question/hypothesis.   \n{}   \n".format(data['question_4']) + \
-    "## 6) **Outliers** and Exclusions Describe exactly how outliers will be defined and handled, and your precise rule(s) for excluding observations.   \n{} \n".format(data['question_5']) + \
-    "## 7) **Sample Size** How many observations will be collected or what will determine sample size?   \n{} \n".format(data['question_6']) + \
-    "## 8) **Other** Anything else you would like to pre-register?   \n{} \n".format(data['question_7'])
-
-
-def get_python_code(data):
-    return data['python_code']
-
-
-def get_r_code(data):
-    return data['r_code']
-
-
-def get_method_description(data):
-    return data['text']
-
-
-def push_to_github(data):
-    logging.warning("Pushing to Github ...")
-    preregistration = data['preregistration']
-    code = data["code"]
-    text = data["text"]
-    
-    push_file(get_preregistration_str(preregistration), 'preregistration.md')
-    push_file(get_python_code(code), 'starter.py')
-    push_file(get_r_code(code), "starter.R")
-    push_file(get_method_description(text), "method.md")
-
-
-@app.route("/push", methods=["PUT"])
-def push():
-    data = json.loads(request.data)
-    push_to_github(data)
-    create_record(data)
-    return jsonify({'status': '200'})
-
-
-if __name__ == '__main__':
-    app.run(host='localhost', port=5555, debug=True)
+if __name__ == "__main__":
+    app.run()

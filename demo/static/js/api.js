@@ -5,8 +5,8 @@
  * @returns 
  */
 
-API_URL = "http://localhost:5000/getMethod"
-API_SAMPLE_URL = 'http://127.0.0.1:5000/getSamples'
+API_URL = "/getMethod"
+API_SAMPLE_URL = '/getSamples'
 
 const isParametric = (dv, iv) => {
     if(dv.type === "ordinal") { 
@@ -21,7 +21,7 @@ const isParametric = (dv, iv) => {
 }
 
 const decideMethod = (dv, iv) => {
-    if(iv.isCategorical()) {
+    if(iv.isCategorical() && iv.type === "nominal") {
         // Correlation tests
         if(isParametric(dv, iv)) {
             if(iv.categories.length > 2) {
@@ -114,9 +114,9 @@ const decideSamples = async (effectSize, confidence, alpha, methodName) => {
         "effectSize": effectSize,
         "confidence": confidence,
         "alpha": alpha,
-        "method": methodName
+        "method": methodName,
+        "nlevels": analysisIV.categories.length
     }
-    console.log(input);
     const response = await fetch(API_SAMPLE_URL, {
         method: "POST", 
         mode: 'cors',
@@ -172,9 +172,8 @@ const commitData = (owner, name) => {
         name: name
     }
     console.log(record);
-    alert("?")
     sleep(5000);
-    createRecord("http://127.0.0.1:5000/push", record);
+    createRecord("/push", record);
 }
 
 async function createRecord(url, data) {
@@ -191,12 +190,11 @@ async function createRecord(url, data) {
 
 async function login(url) {
     const response = await fetch(url, {
-        method: "GET", 
+        method: "POST", 
         mode: 'cors',
         cache: 'no-cache',
         credentials: 'same-origin'
     });
     let result = await response.json();
-    console.log(result);
     return result;
 }

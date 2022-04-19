@@ -5,24 +5,49 @@
  * However, current version is under development for more comprehensive test compatibility
  */
 const ANALYSIS_ID = "analysis";
-const ANALYSIS_PLUGIN_ID = ANALYSIS_ID + "_preregistea";
+const ANALYSIS_PLUGIN_ID = ANALYSIS_ID + "_aperitif";
 const ANALYSIS_BTN_ID = ANALYSIS_ID + "_initial_btn";
 const ANALYSIS_TEXTAREA_NODE = $("[name='text4']");
 const ANALYSIS_PARENT_SECTION = ANALYSIS_TEXTAREA_NODE.parent().parent().parent();
+ 
+const ANALYSIS_DESCRIPTION = "Specify Hypotheses between dependent and independent Variables by clicking the variables of your interest.";
 
-const ANALYSIS_DESCRIPTION =
-    "Specify Hypotheses between dependent and independent Variables by clicking the variables of your interest."
+analysisIVClicked = false;
+analysisIV = null;
+analysisIVElement = null;
 
-let effectSize = "";
+analysisDVClicked = false;
+analysisDV = null;
+analysisDVElement = null;
 
-let selectedIV = [];
+let methodName = null;
 
-let method = null;
+// TODO: Add logic here
+const addAnalysisAperitif = () => {
+    const aperitif = createAperitifForm75(ANALYSIS_PLUGIN_ID, ANALYSIS_DESCRIPTION);
+    aperitif.append(addArrow());
+    ANALYSIS_PARENT_SECTION.prepend(aperitif);
+    // aperitif.hide();
 
-// Default average value set to median for analysis 
-// because both Aperitif and Tea are using conservative (nonparametric) tests 
-// if no assumption is made 
-meanOrmedian = "median"; 
+    const displayArea = aperitif.find(".displayarea");
+    const container = createAnalysisTwoColumnsForm();
+    displayArea.append(container);
+}
+
+const createAnalysisTwoColumnsForm = () => {
+    return $(`<div class='container'>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <p style="text-align: center">Dependent Variables</p>
+                        <div class="hypothesis-dv"></div>
+                    </div>
+                    <div class="col-sm-6">
+                        <p style="text-align: center">Independent Variables</p>
+                        <div class="hypothesis-iv"></div>
+                    </div>
+                </div>
+            </div>`);
+}
 
 hypothesisPairListener = {
     pInternal: hypothesisPair,
@@ -40,180 +65,99 @@ hypothesisPairListener = {
 }
 
 hypothesisPairListener.registerListener(function(pair) {
-    const inputArea = $(`#analysis_preregistea .inputarea`);
+    const inputArea = $(`#analysis_aperitif .inputarea`);
     inputArea.empty();
 
     if(pair['dv'] !== null && pair['iv'] !== null) {
         pair['iv'].setAssumptions(pair['dv']);
-        updateHypothesisFormArea(pair, inputArea);
+        updateHypothesisFormArea(inputArea);
     } else {
         inputArea.append("Please choose a dependent variable and a condition.");
     }
 })
 
-// Deprecated code for multiple independent variable selection
-// We discarded this option because Tea does not support reasoning for more independent variables
-// However, current version is under development for more comprehensive test compatibility
 
-// selectedIVListener = {
-//     sivInternal: selectedIV,
-//     sivListener: function(val) {},
-//     set selectedIV(val) {
-//         this.sivInternal = val;
-//         this.sivListener(val);
-//     },
-//     get selectedIV() {
-//         return this.sivInternal;
-//     },
-//     registerListener: function (listener) {
-//         this.sivListener = listener;
-//     }
-// }
+// Modal for the assumption modal
+const addAssumptionModal = (body) => {
+    const modal = $(`
+        <div class="modal fade" id="assumptionModal" tabindex="-1" role="dialog" aria-labelledby="assumptionModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                     <h5 class="modal-title" id="assumptionModalLabel"></h5>
+                     <button type="button" class="btn btn-light close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                     </button>
+                  </div>
+                  <div class="modal-body">  
+                    <div class="form-group">
+                        Please check the assumptions. Don't worry if you don't have any assumptions of the data at this stage. Apéritif will use non-parametric statistical analysis. 
+                    </div>
+                    <div class="form-group">
+                        <input type="checkbox" id="assumption-independence" name="independence">
+                        <label for="assumption-independence"><a href="https://www.statisticshowto.com/assumption-of-independence/" target="_blank">Independence</a></label> <span class="glyphicon glyphicon-info-sign" data-toggle="tooltip" title="The assumption of independence means that your data isn’t connected in any way"></span><br>
+                        <input type="checkbox" id="assumption-normality" name="normality">
+                        <label for="assumption-normality"><a href="https://www.statisticshowto.com/assumption-of-normality-test/" target="_blank">Normality</a></label> <span class="glyphicon glyphicon-info-sign" data-toggle="tooltip" title="The assumption of independence means that your data roughly fits a bell curve shape."></span><br>
+                        <input type="checkbox" id="assumption-equalvariance" name="equalvariance">
+                        <label for="assumption-equalvariance"><a href="https://www.statisticshowto.com/homoscedasticity/" target="_blank">Equal Variance</a></label> <span class="glyphicon glyphicon-info-sign" data-toggle="tooltip" title="The assumption of equal variance (homoscedasticity) means that different samples have the same variance."></span><br>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="save btn btn-success" data-bs-dismiss="modal">Save</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                  </div>
+                </div>
+            </div>
+        </div>
+    `);
 
-// selectedIVListener.registerListener(function(selected) {
-//     const inputArea = $(`#analysis_preregistea .inputarea`);
-//     inputArea.empty();
-//
-//     if(analysisDV != null && selected.length > 0) {}
-//
-// })
+    body.append(modal);
+    $("#assumptionModal .save.btn").on("click", function() {
+        let isIndependence = $("#assumption-independence").prop("checked");
+        let isNormal = $("#assumption-normality").prop("checked");
+        let isEqualVariance = $("#assumption-equalvariance").prop("checked");
 
-/**
- * Layout for analysis. Append a series of JQuery objects to the analysis section
- */
-const addAnalysisPreregistea = () => {
-    const preregistea = createPreregisteaForm(ANALYSIS_PLUGIN_ID, ANALYSIS_DESCRIPTION);
-    preregistea.append(addArrow());
-    ANALYSIS_PARENT_SECTION.prepend(preregistea);
-    preregistea.hide();
-
-    const displayArea = preregistea.find(".displayarea");
-    const container = createAnalysisTwoColumnsForm();
-    displayArea.append(container);
-
-}
-
-const updateVariableInAnalysis = (displayarea, variables) => {
-    let cards = [];
-    selectedIV = [];
-
-    for(let i = 0; i < variables.length; i++) {
-        const card = addHypothesisCard(variables[i].display_name, variables[i].card_id);
-        card.on("click", ":not(.assumptions-update)", function() {
-            addHypothesisCardEventListener(card, variables[i]);
-        })
-
-        if(conditions.filter(e => e.name === variables[i].name).length > 0) {
-            card.append(`<a class="assumptions-update">Update Assumptions</a>`); //data-toggle="modal" data-target="#assumptionModal"
-            card.find(".assumptions-update").on("click", function() {
-                if(analysisDV === null) {
-                    alert("Please select a dependent variable in your hypothesis formation process.");
-                    return;
-                }
-                currentAssumptionVariable = variables[i];
-                let dv_name = analysisDV.name;
-                let assumptions = variables[i].assumption[dv_name];
-                if(assumptions.independence) {
-                    $("#assumptionModal #assumption-independence").prop("checked", true);
-                }
-
-                if(assumptions.normality) {
-                    $("#assumptionModal #assumption-normality").prop("checked", true);
-                }
-
-                if(assumptions.homoscedasticity) {
-                    $("#assumptionModal #assumption-equalvariance").prop("checked", true);
-                }
-
-                $("#assumptionModal").modal("toggle");
-            })
-        }
-
-        // card.find(".assumptions-update").on("click", function() {
-        //
-        // })
-        cards.push(card);
-    }
-
-    displayarea.html(cards);
-}
-
-const updateAssumptionSection = (dv, ivs) => {
-    let isBetween = false, isWithin = false, isMixed = false;
-
-    // Check if this is a mixed factorial design
-    for(let i = 0; i < selectedIV.length; i++) {
-        if(selectedIV[i].study_design === "between"){
-            isBetween = true;
-        } else {
-            isWithin = true;
-        }
-        if(isBetween && isWithin) {
-            isMixed = true;
-            break;
-        }
-    }
-
-    for(let i = 0; i < selectedIV.length; i++) {
-        selectedIV[i].setAssumptions(dv);
-    }
-
-    // update assumption sections
-    console.log(decide_method(ivs, dv));
-}
-
-const hey = (card, variable) => {
-    if(variable.section === DEPENDENT_VARIABLE_ID) {
-        card.css("background", "grey");
-
-        if(analysisDVClicked) {
-            analysisDVElement.css("background", "none");
-            if(analysisDV.name === variable.name) {
-                analysisDVClicked = false;
-                analysisDVElement = null;
-                analysisDV = null;
-                // hypothesisPair['dv'] = null;
-            } else {
-                analysisDVClicked = true;
-                analysisDVElement = card;
-                analysisDV = variable;
-                // hypothesisPair['dv'] = analysisDV;
+        for(let i = 0; i < globalIVs.length; i++) {
+            if(currentAssumptionVariable.name === globalIVs[i].name) {
+                globalIVs[i].setAssumptions(analysisDV, isNormal, isIndependence, isEqualVariance);
+                break;
             }
-        } else {
-            analysisDVClicked = true;
-            analysisDVElement = card;
-            analysisDV = variable;
         }
-    } else {
-        let selected = card.css("background-color") === "rgb(128, 128, 128)";
+        $(this).find("input[type=checkbox]").prop("checked", "");
 
-        if(selected) {
-            card.css("background", "none");
-            deleteFromArray(variable.name, selectedIV);
-        } else {
-            card.css("background", "grey");
-            selectedIV.push(variable);
-        }
-    }
-
-    updateAssumptionSection(analysisDV, selectedIV);
+        currentAssumptionVariable = null;
+        $(`#analysis_aperitif .inputarea`).empty();
+        updateHypothesisFormArea($(`#analysis_aperitif .inputarea`));
+        $('#assumptionModal').modal('hide')
+    });
 }
 
+// Layout for the variables in the hypothesis question
+const addHypothesisCard = (text, id) => {
+    return $(`
+        <div class="hypothesis-card" id="${id}">
+            <p>${text}</p>
+        </div>
+    `);
+}
+
+// Add event listner for the hypothesis card
+// Update the currently selected dv and iv
+// Note that Aperitif can only support one iv at a time 
 const addHypothesisCardEventListener = (card, variable) => {
     card.css("background", "grey");
-
     if(variable.section === DEPENDENT_VARIABLE_ID) {
         if(analysisDVClicked) {
             analysisDVElement.css("background", "none");
             if(analysisDV.name === variable.name) {
-                analysisDVClicked = false;
+                analysisDVClicked = false; 
                 analysisDVElement = null;
                 analysisDV = null;
                 hypothesisPair['dv'] = null;
             } else {
                 analysisDVClicked = true;
                 analysisDVElement = card;
-                analysisDV = variable;
+                analysisDV = variable; 
                 hypothesisPair['dv'] = analysisDV;
             }
         } else {
@@ -224,181 +168,155 @@ const addHypothesisCardEventListener = (card, variable) => {
         }
         hypothesisPairListener.pair = hypothesisPair;
     } else {
-        if(analysisConditionClicked) {
-            analysisConditionElement.css("background", "none");
-            if(analysisCondition.name === variable.name) {
-                analysisConditionClicked = false;
-                analysisConditionElement = null;
-                analysisCondition = null;
+        if(analysisIVClicked) {
+            analysisIVElement.css("background", "none");
+            if(analysisIV.name === variable.name) {
+                analysisIVClicked = false;
+                analysisIVElement = null;
+                analysisIV = null;
                 hypothesisPair['iv'] = null;
             } else {
-                analysisConditionClicked = true;
-                analysisConditionElement = card;
-                analysisCondition = variable;
-                hypothesisPair['iv'] = analysisCondition;
+                analysisIVClicked = true;
+                analysisIVElement = card;
+                analysisIV = variable;
+                hypothesisPair['iv'] = analysisIV;
             }
         } else {
-            analysisConditionClicked = true;
-            analysisConditionElement = card;
-            analysisCondition = variable;
-            hypothesisPair['iv'] = analysisCondition;
+            analysisIVClicked = true;
+            analysisIVElement = card;
+            analysisIV = variable;
+            hypothesisPair['iv'] = analysisIV;
         }
         hypothesisPairListener.pair = hypothesisPair;
     }
 }
 
-const createAssumptionForms = () => {
-    const independenceAssumption = $(`
-            <span class="assumption-item hover-item independence-assumption">
-                <p style="border: 1px black solid">Independence</p>
-                <span class="hovercard">
-                    <div class="tooltiptext">
-                        The measures are independent of one another
-                    </div>
-                  </span>
-            </span>`);
-    const normalityAssumption = $(`
-        <span class="assumption-item hover-item normality-assumption">
-                <p style="border: 1px black solid">Normality</p>
-                <span class="hovercard">
-                    <div class="tooltiptext">
-                        The distribution of the dependent variable within each group is normally distributed.
-                    </div>
-                </span>
-        </span>
-    `);
+// Update variable functions
+const updateVariableInAnalysis = (displayArea, variables) => {
+    let cards = [];
+    selectedIV = [];
 
-    const homoscedasticity = $(`
-            <span class="assumption-item hover-item homo-assumption">
-                <p style="border: 1px black solid">Equal Variances</p>
-                <span class="hovercard">
-                    <div class="tooltiptext">
-                        The variance of each group is about the same.
-                    </div>
-                  </span>
-            </span>`);
+    for(let i = 0; i < variables.length; i++) {
+        const card = addHypothesisCard(variables[i].display_name, variables[i].card_id);
+        card.on("click", ":not(.assumptions-update)", function() {
+            addHypothesisCardEventListener(card, variables[i]);
+        });
 
-    const form = $(`
-        <form class='assumptions'>
-            <label>Assumptions</label>
-            <div class="form-group" style="display: flex; flex-direction: row">
-            </div>
-        </form>
-    `);
-
-
-    form.find(".form-group").append([independenceAssumption, normalityAssumption, homoscedasticity]);
-    return form;
+        if(globalIVs.filter(e => e.name === variables[i].name).length > 0) {
+            card.append(`<a class="assumptions-update">Update Assumptions</a>`);
+            card.find(".assumptions-update").on("click", function() {
+                if(analysisIV === null) {
+                    alert("Please select a dependent variable in your hypothesis formation process.");
+                    return;
+                }
+                if(analysisDV === null) {
+                    alert("Please select a dependent variable in your hypothesis formation process.");
+                    return;
+                }
+                currentAssumptionVariable = variables[i];
+                let dv_name = analysisDV;
+                let assumptions = variables[i].assumption[dv_name.name];
+                if(assumptions.independence) {
+                    $("#assumptionModal #assumption-independence").prop("checked", true);
+                }
+                if(assumptions.normality) {
+                    $("#assumptionModal #assumption-normality").prop("checked", true);
+                }
+                if(assumptions.homoscedasticity) {
+                    $("#assumptionModal #assumption-equalvariance").prop("checked", true);
+                }
+                $("#assumptionModal").modal("toggle");
+            })
+        }
+        cards.push(card);
+    }
+    displayArea.html(cards);
 }
 
-// const updateHypothesisFormArea = ()
-const updateHypothesisFormArea = (pair, inputArea) => {
-    let dv = hypothesisPair['dv'];
-    let iv = hypothesisPair['iv'];
-    let hypothesisFormArea;
-
-    // const assumptions = createAssumptionForms(iv);
-
-    if(iv.type === 'nominal') hypothesisFormArea = createHypothesisConditionIsNominal(dv, iv);
-    else hypothesisFormArea = createHypothesisConditionIsNotNominal(dv, iv);
-
-    // Add event listener to the generate hypothesis button
-    const apiBtn = $("<button type='button' class='btn btn-success submit'>Generate a Hypothesis</button>");
-    apiBtn.on("click", function() {
-        const conditionType = iv.type;
-        let relationship;
-        if(conditionType === "nominal") {
-            let two_side = false;
-            const selected = $(".two-side").find(":selected").val();
-            if(selected === 'different') {
-                two_side = true;
-            } else if (selected === "same") {
-                two_side = "same";
-            }
-
+const addListenerToGenerateHypothesis = (methodDisplay, dv, iv, meanOrMedian, method) => {
+    methodDisplay.find("button").on("click", function() {
+        if(!confirm("Please make sure you'd like to generate hypothesis based on this study design.")) {
+            return;
+        }
+        if(iv.type === "nominal") {
+            // Comparison relationship
+            // Check whether the hypothesis test is two sided
+            let selectedSide = $(".two-side").find(":selected").val();
             let cat1 = $(`.iv-group-custom-select-1 option:selected`).val();
             let cat2 = $('.iv-group-custom-select-2 option:selected').val();
-            if(selected === 'less') {
+
+            let twoSide = true; 
+            if (selectedSide === "greater" || selectedSide === "less") {
+                twoSide = false;
+            } // else twoSide = true;
+
+            // organize the text presentation order 
+            if(selectedSide === 'less') {
                 let temp = cat2;
                 cat2 = cat1;
                 cat1 = temp;
             }
-            relationship = {
-                'condition_type': 'nominal',
-                'two-side': two_side,
-                'categories': [cat1, cat2]
+
+            relKey = { // relationship key
+                'iv_type': "nominal",
+                "two_side": twoSide,
+                "categories": [cat1, cat2]
+            }
+            if(iv.categories.length > 2) {
+                $("#cohen").text("f");
+                $("#small-effect").val(0.1);
+                $("#small-effect-label").text(0.1);
+                $("#medium-effect").val(0.25);
+                $("#medium-effect-label").text(0.25);
+                $("#large-effect").val(0.4);
+                $("#large-effect-label").text(0.4);
+                cohen = "f"
             }
         } else {
+            // Correlation relationship. Ordinal variable will always use non-parametric Kendall's tau/Spearman's rho
             let positive = false;
             let posNeg = $('.positive-negative option:selected').val();
             if(posNeg) positive = true;
-            relationship = {
-                'condition_type' : conditionType,
+            relKey = {
+                'iv_type' : iv.type,
                 'positive': positive
             }
+
+            
+            $("#sample-form-group").hide();
+            $("#correlation-body").show();
+            $("#pilot-study").hide();
         }
 
-        // get the effect size
-        effectSize = $(".effect-size-area input[type='radio']:checked").val();
-
-        updateTeaCodeHypothesis(iv, dv, relationship);
-        addJustification(iv, dv);
-        setTimeout(() => {updateAnalysisTextArea(iv, dv, relationship);}, 1000)
-    })
-    // inputArea.append(assumptions);
-    inputArea.append(hypothesisFormArea);
-    inputArea.append(apiBtn);
-}
-
-
-const addJustification = (iv, dv) => {
-    console.log(teaCode);
-    decide_method().then((data) => {
-        method = {
-            method: API_FOREIGN_KEY[data['methods'][data['methods'].length - 1][0]],
-            rationale: "rationale"
-        }
-        console.log(method);
+        updateTeaCodeHypothesis(dv, iv, relKey);
+        updateAnalysisTextArea(dv, iv, relKey, meanOrMedian, method);
     });
-
-    // We discarded this because initial user test indicated that this is confusing
-    // $(".justification").html(`
-    //     <p>
-    //         To test this hypothesis, you will use ${method.method}, because ${method.rationale}
-    //     </p>
-    // `);
 }
 
-const updateAnalysisTextArea = () => {
+const updateAnalysisTextArea = (dv, iv, relKey, meanOrMedian, method) => {
     let newText = "";
 
     for(let i = 0; i < report.hypothesis.length; i++) {
         const iv = report.hypothesis[i][0][0], dv = report.hypothesis[i][0][1];
-
-        if(iv.type === 'nominal') {
+        
+        // This prototype almost guarantees this situation.
+        // But what about more complex models?
+        if(iv.type === 'nominal') { 
             let compare;
             if(report.hypothesis[i][1][0] === "!=") compare = "different from";
             else if(report.hypothesis[i][1][0] === ">") compare = "greater than";
             else compare = "same as";
-
-            newText += `H${i}: The median value of ${dv.display_name} in ${report.hypothesis[i][1][1]} group will be ${compare} that in ${report.hypothesis[i][1][2]}. `;
-
-            newText += `We will analyze this hypothesis with ${method["method"]}. See the reproducible statistical code for analysis.`;
-
-            // if(iv.study_design === "within") {
-            //     newText += `We will analyze this hypothesis with Wilcoxon signed-rank test. See the reproducible Tea code for analysis.`
-            // } else {
-            //     newText += `We will analyze this hypothesis with Mann-Whitney U test. See the reproducible Tea code for analysis.`
-            // }
+            // TODO: fix this.
+            newText += `H${i+1}: The ${meanOrMedian} value of ${dv.display_name} in ${report.hypothesis[i][1][1]} group will be ${compare} that in ${report.hypothesis[i][1][2]}. `;
+            newText += `We will analyze this hypothesis with ${method}. See the reproducible statistical code for the analysis after data collection.`;
         } else {
             const pos = report.hypothesis[i][1][0];
             if(pos === "~") {
-                newText += `H${i}: The greater value of ${iv.display_name} will lead to greater value of ${dv.display_name}.`;
+                newText += `H${i+1}: The greater value of ${iv.display_name} will lead to greater value of ${dv.display_name}.`;
             } else {
-                newText += `H${i}: The greater value of ${iv.display_name} will lead to less value of ${dv.display_name}.`;
+                newText += `H${i+1}: The greater value of ${iv.display_name} will lead to less value of ${dv.display_name}.`;
             }
-
-            newText += `We will analyze this hypothesis with a linear regression model. See the reproducible statistical code for anlaysis. `
+            newText += `We will analyze this hypothesis with a ${method} statistical test. See the reproducible statistical code for the anlaysis after data collection. `
         }
         newText += "\n";
     }
@@ -406,86 +324,102 @@ const updateAnalysisTextArea = () => {
     ANALYSIS_TEXTAREA_NODE.val(newText);
 }
 
-const createHypothesisConditionIsNominal = (dv, iv) => {
-    const template = $(`<form class='hypothesis_display_form'>
-                    <div class="form-group">
-                        <label for='name' class='col-form-label'>Hypothesis:
-                        <div class="form-inline">
-                            <label>The ${meanOrmedian} value of</label>
-                            <label class="dv-in-form"></label>
-                            <label>in</label>
-                            <select class="iv-group-custom-select-1">
-                            </select>
-                            <label>group will be</label>
-                            <select class="custom-select two-side">
-                                <option value="greater">greater than</option>
-                                <option value="less">less than</option>
-                                <option value="different">different from</option>
-                                <option value="same">same as</option>
-                            </select>
-                            <label>that in</label>
-                            <select class="iv-group-custom-select-2">
-                            </select>
-                            
-                            ${createCustomTooltip("<span class=\"glyphicon glyphicon-info-sign\"></span>", "Aperitif uses a conservative nonparametric approach when preregistering your study. If you are confident that the hypothesis testing is parametric, Aperitif will compare the mean values.")[0].outerHTML}
-                        </div>
-                    </div>
-                    <div class="justification"></div>
-                    <div class="effect-size-area">
-                        <div class="form-group">
-                            <label class="col-form-label">How to measure the effect size? ${createCustomTooltip("<span class=\"glyphicon glyphicon-info-sign\"></span>", "<a href='https://rpsychologist.com/cohend/' target='_blank'>What is effect size?</a>")[0].outerHTML}</label>
-                            <div class="effect-size-selection">
-                                <input type="radio" name="effect-size" id="cohenf" value="cohenf">
-                                <label for="cohenf">Cohen's d ${createCustomTooltip("<span class=\"glyphicon glyphicon-info-sign\"></span>", "Cohen's D is a conventional effect size metric to conduct power analysis.")[0].outerHTML}</label>
-                            
-                                <input type="radio" name="effect-size" id="sme" value="standardized">
-                                <label for="sme">Standardized Mean Effects ${createCustomTooltip("<span class=\"glyphicon glyphicon-info-sign\"></span>", "Standardized Mean Effects typically are used when prior analysis was conducted. ")[0].outerHTML}</label>
-<!--                                <label for='cohenf'><input type="radio" id="cohenf" value="cohenf">Cohen's f</label>-->
-<!--                                <label for="sme"><input type="radio" id="sme" value="standardized">Standardized Mean Effects</label>-->
+
+const updateHypothesisFormArea = (inputArea) => {
+    let dv = hypothesisPair['dv'];
+    let iv = hypothesisPair['iv'];
+    // Decide method and the specific wordings
+    let meanOrMedian = "median";
+    let method = decideMethod(dv, iv);
+    methodName = method; 
+    if(IsParametricDic[method]) {
+        meanOrMedian = "mean";
+    } else {
+        meanOrMedian = "median";
+    }
+    // TODO!!
+    if(iv.type === 'nominal') hypothesisFormArea = createHypothesisIVIsNominal(dv, iv, method, meanOrMedian);
+    else hypothesisFormArea = createHypothesisIVIsNotNominal(dv, iv, method);
+    inputArea.append(hypothesisFormArea);
+
+    methodDisplay = $(`
+                        <br>
+                        <div class="container text-center"> 
+                            <div class="row">
+                                <div class="col-sm-8" style="border: 1.5px dashed #5cb85c"><strong>Statistical Tests:</strong> <br/> ${method}</div>
+                                <div class="col-sm-4"><button id="generate-hypothesis" type='button' class='btn btn-success submit'>Generate a Hypothesis</button></div>
                             </div>
-                        </div>
-                    </div>
-                </form>`);
+                        </div>`);
+    inputArea.append(methodDisplay);
+    $("#meanorMedianinHypothesis").text(meanOrMedian);
+    addListenerToGenerateHypothesis(methodDisplay, dv, iv, meanOrMedian, method);
+}
 
-    template.on("change", function() {
-        effectSize = $(".effect-size-selection input[type='radio']:checked").val();
-        updateEffectSize(effectSize);
-    })
+// Create the text section for the hypothesis section
+const createHypothesisIVIsNominal = (dv, iv, method, meanOrMedian) => {
+    const template = $(`
+        <form class='hypothesis_display_form'>
+            <div class="form-group">
+                <label for='name' class='col-form-label'>Hypothesis:</label>
+                <div class="form-inline">
+                    <label>The <span id="meanorMedianinHypothesis">${meanOrMedian}</span> value of</label>
+                    <label class="dv-in-form"></label>
+                    <label>in</label>
+                    <select class="iv-group-custom-select-1">
+                    </select>
+                    <label>group will be</label>
+                    <select class="custom-select two-side">
+                        <option value="greater">greater than</option>
+                        <option value="less">less than</option>
+                        <option value="different">different from</option>
+                        <option value="same">same as</option>
+                    </select>
+                    <label>that in</label>
+                    <select class="iv-group-custom-select-2">
+                    </select>
+                    .
+                    <span class="glyphicon glyphicon-info-sign" data-toggle="tooltip" title=""Aperitif uses a conservative nonparametric approach when preregistering your study. If you are confident that the hypothesis testing is parametric, Aperitif will compare the mean values."></span>
+                </div>
+            </div>
 
-    template.find(".dv-in-form").append(dv.name);
-    let categoryOptions = [];
-    let categoryOptions2 = [];
+            <div class="justification"></div>
+    `);
+
+    // Populate options for dependent and independent variable choices
+    template.find(".dv-in-form").append($(`<strong>${dv.name}</strong>`));
+    let categoryOptions = [], categoryOptions2 = [];
     for(let i = 0; i < iv.categories.length; i++) {
         const option = $(`<option value="${iv.categories[i]}">${iv.categories[i]}</option>`);
         categoryOptions.push(option);
         categoryOptions2.push(option.clone());
     }
-
+    // Default selection
     categoryOptions[0].prop("selected", true);
     categoryOptions2[1].prop("selected", true);
-
+    // Insert into the jquery object
     template.find(".iv-group-custom-select-1").html(categoryOptions);
     template.find(".iv-group-custom-select-2").html(categoryOptions2);
 
     return template;
 }
 
-const createHypothesisConditionIsNotNominal = (dv, iv) => {
+
+const createHypothesisIVIsNotNominal = (dv, iv, method, meanOrMedian) => {
     const template = $(`
                 <form class='hypothesis_display_form'>
                     <div class="form-group">
-                        <label for='name' class='col-form-label'>Hypothesis:
+                        <label for='name' class='col-form-label'><strong>Hypothesis:</strong>
                         <div class="form-inline" style="display: inline-block;">
                             <label>The greater value of</label>
                             <label class="iv-in-form mr-sm-2"></label>
-                            <label>will lead to</label>
+                            <label>will lead to a </label>
                             <select class="custom-select positive-negative">
                                 <option value="greater" selected>greater</option>
                                 <option value="less">less</option>
                                 <option value="different">different</option>
                                 <option value="same">the same</option>
                             </select>
-                            <label class="dv-in-form"></label>
+                            value of <label class="dv-in-form"></label>.
                         </div>
                     </div>
                 </form>
@@ -493,28 +427,4 @@ const createHypothesisConditionIsNotNominal = (dv, iv) => {
     template.find(".dv-in-form").append(dv.name);
     template.find(".iv-in-form").append(iv.name);
     return template;
-}
-
-const addHypothesisCard = (text, id) => {
-    return $(`
-        <div class="hypothesis-card" id="${id}">
-            <p>${text}</p>
-        </div>
-    `);
-}
-
-
-const createAnalysisTwoColumnsForm = () => {
-    return $(`<div class='container'>
-                <div class="row">
-                    <div class="col-xs-6">
-                        <p style="text-align: center">Dependent Variables</p>
-                        <div class="hypothesis-dv"></div>
-                    </div>
-                    <div class="col-xs-6">
-                        <p style="text-align: center">Independent Variables</p>
-                        <div class="hypothesis-iv"></div>
-                    </div>
-                </div>
-            </div>`);
 }

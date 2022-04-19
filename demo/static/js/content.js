@@ -4,32 +4,46 @@ $(document).ready(function() {
         $('[data-toggle="tooltip"]').tooltip()
     })
     addInstruction();
-    
+    const body = $("body");
+    addEffectSizeModal(body);
     addDVAperitif();
     addIVAperitif();
     addAnalysisAperitif();
     addSampleSizeAperitif();
     
-    const body = $("body");
+    
     addAssumptionModal(body);
     addTeaModal(body);
+    
     body.append(addTeaFloatingBtn());
     body.append(addMethodFloatingBtn());
 
     // log in with github 
-    
-    $("button#preview").parent().append(`<button class="btn btn-success" id="connect"><i class="fab fa-github"></i>Push Your Artifacts to Github</button>`);
+    $("button#preview").parent().append(`<button class="btn btn-success" id="connect"><i class="fab fa-github"></i><span id="signup-btn-text">Push Your Artifacts to Github</span></button>`);
+    $("button#preview").parent().append(`<button class="btn btn-success" id="login"><i class="fab fa-github"></i><span id="login-btn-text">Log in to Github</span></button>`);
+    $("#connect").hide();
+    $("#login").on("click", function() {
+        window.open("/loginHere");
+        $("#login").hide();
+        $("#connect").show();
+    })
     $("#connect").on("click", function() {
         if(confirm("You will commit the preregistration, analysis code, and methods description to a new repository upon connecting to your Github account successfully. Are you sure to proceed?")){
             (async () => {
-                const response = await login("http://127.0.0.1:5000/github");
+                const response = await login("/github");
                 
-                console.log(response);
-                OWENER = response.owner;
-                NAME = response.name;
-                commitData(OWENER, NAME);
+                if(response.success === 'login') {
+                    alert('Please log in to Github to push your preregistration! Something might have happened in the backend. Please contact the creator.');
+                } else if (response.success === "false") {
+                    alert('Something happened in the backend. Please contact the creator.');
+                } else {
+                    OWENER = response.owner;
+                    NAME = response.name;
+                    commitData(OWENER, NAME);
+                    alert("Success. Check you Github Repository!")
+                }
+                // window.open("/github", '_blank').focus();
             })();
-            
         }
     })
 });

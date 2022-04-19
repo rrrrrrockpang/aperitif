@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
-from flask_cors import CORS
-from statsmodels.stats.power import TTestPower, TTestIndPower, FTestAnovaPower, FTestPower
+from flask_cors import CORS, cross_origin
+from statsmodels.stats.power import TTestPower, TTestIndPower, FTestAnovaPower, FTestPower, NormalIndPower
 from flask_dance.contrib.github import make_github_blueprint, github
 import json, requests, logging
 import base64
@@ -10,11 +10,36 @@ CORS(app)
 app.config["CACHE_TYPE"] = "null"
 app.config["SECRET_KEY"] = "aperitif"  
 
+# Update this to deploy
 github_blueprint = make_github_blueprint(
-    client_id='617c507bd1daa9b7130b', 
-    client_secret='dcf3e0843f75ac4f597aa901489c41585dfba8a6', 
-    scope='repo,user')
+    client_id='', 
+    client_secret='', 
+    scope='repo,user',
+    redirect_url="/default")
 app.register_blueprint(github_blueprint, url_prefix='/github_login')
+
+## MongoDB configuration
+# TODO: Need to define your own MongoDB URI
+# See MongoDB documentation: https://docs.mongodb.com/guides/server/drivers/
+# See MongoEngine that was implemented here: http://mongoengine.org/
+DB_URI = ""
+app.config['MONGODB_HOST'] = DB_URI
+
+db = MongoEngine()
+db.init_app(app)
+preregis_input = None
+
+## Github Configuration
+# Username, repo name, and personal access token
+# To create a personal access token, follow
+# https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
+OWNER = ""
+REPO = ""
+TOKEN = "" 
+
+# Placeholder header csv as input to Tea
+DATA_DIR = "static"
+HEADER_CSV = "header.csv" 
 
 # prevent cached responses
 if app.config["DEBUG"]:
@@ -33,22 +58,20 @@ def create_new_repo():
         "Authorization": "token {}".format(github_blueprint.token['access_token'])
     }
     data = {
-        "name": "Aperitif Preregistration", 
+        "name": "Aperitif Preregistration Demo", 
         "private": "false",
         "has_wiki": "true"
     }
     response = github.post(headers=headers, json=data, url="/user/repos")
-    print(response.json())
     data = response.json()
 
     if response.ok: return True, response.json()
     return False, ""
 
-@app.route("/github")
-def github_login():
+@app.route("/github", methods=['GET', 'POST'])
+def connect_to_github():
     if not github.authorized:
-        redirect(url_for('github.login'))
-    
+        return jsonify({'success': 'login'})
     success, response = create_new_repo()
     if success:
         return jsonify({'success': 'true', 'owner': response['owner']['login'], 'name': response['name']})
@@ -63,6 +86,14 @@ def hello_world():
 @app.route("/")
 def index():
     return render_template("index.html")
+
+@app.route("/loginHere")
+def loginHere():
+    return redirect(url_for("github.login"))
+    # return '''<a href="javascript:window.open('','_self').close();">Close Tab</a>'''
+@app.route("/default")
+def default():
+    return '''<p>You are logged in. Please <a href="javascript:window.open('','_self').close();">close this tab</a>, and click "Push Your Artifacts to Github" in the previous page.</p>'''
 
 #### Select Test ####
 def get_variables(input):
@@ -158,7 +189,7 @@ def run_tea_code(input):
         results.append(tea.hypothesize(var_pair, var_rel))
     return results
 
-def calc_power(sample_size, effect_size, alpha, method):
+def calc_power(sample_size, effect_size, alpha, method, k_groups):
     if method == "Paired-samples t-test" or method == "Wilcoxon signed-rank test":
         return TTestPower().power(effect_size=effect_size, 
                                     nobs=sample_size, 
@@ -172,8 +203,13 @@ def calc_power(sample_size, effect_size, alpha, method):
                                     nobs=sample_size, 
                                     alpha=alpha, k_groups=k_groups) # TODO: Figure out this k_groups
     elif method == "One-way repeated measures ANOVA" or method == "Friedman test":
-        return FTestPower().power(effect_size=effect_size,
-                                    alpha=alpha, df_num=df_num, ncc=0)
+        # definition of df_num, df_denom: https://courses.lumenlearning.com/introstats1/chapter/the-f-distribution-and-the-f-ratio/
+        # Implementation: https://stackoverflow.com/questions/64420111/how-can-i-get-the-ftest-solve-power-methods-in-statsmodel-to-compute-power-for
+        return FTestPower().solve_power(effect_size=effect_size,
+                                    alpha=alpha, df_num=sample_size-k_groups, nobs=sample_size, df_denom=(k_groups), ncc=0)
+    else:
+        return NormalIndPower().power(effect_size=effect_size, alpha=alpha, nobs1=sample_size, ratio=1, alternative="larger")
+    
 
 @app.route("/getMethod", methods=["GET", "POST"])
 def get_method():
@@ -189,16 +225,17 @@ def get_sample():
     alpha = data["alpha"]
     confidence = data['confidence']
     method = data["method"]
-    lower, higher = 5, 100
+    k_groups = data['nlevels']
+    lower, higher = 5, 300
     lst = []
     for point in range(lower, higher + 1):
         lst.append({
             "sample": point,
-            "power": calc_power(point, effect_size, alpha, method),
-            "lower": calc_power(point, effect_size - confidence, alpha, method),
-            "higher": calc_power(point, effect_size + confidence, alpha, method)
+            "power": calc_power(point, effect_size, alpha, method, k_groups),
+            "lower": calc_power(point, effect_size - confidence, alpha, method, k_groups),
+            "higher": calc_power(point, effect_size + confidence, alpha, method, k_groups)
         })
-    print(method)
+    
     return jsonify({'data': lst})
 
 
@@ -265,10 +302,138 @@ def push_to_github(data):
 @app.route("/push", methods=["PUT"])
 def push():
     data = json.loads(request.data)
-    print(github_blueprint)
     push_to_github(data)
     return jsonify({'status': '200'})
 
+#### Push to Github ###
+# Construct preregistration class that holds necessary information
+# Users can also push the pdf upstream 
+# and information to MongoDB
+class Preregistration(db.Document):
+    uuid: str = db.StringField()
+    question_1: str = db.StringField()
+    question_2: str = db.StringField()
+    question_3: str = db.StringField()
+    question_4: str = db.StringField()
+    question_5: str = db.StringField()
+    question_6: str = db.StringField()
+    question_7: str = db.StringField()
+
+    def to_json(self):
+        return {
+            "uuid": self.uuid,
+            "question_1": self.question_1,
+            "question_2": self.question_2,
+            "question_3": self.question_3,
+            "question_4": self.question_4,
+            "question_5": self.question_5,
+            "question_6": self.question_6,
+            "question_7": self.question_7,
+        }
+
+
+class AnalysisCode(db.Document):
+    uuid: str = db.StringField()
+    r_code: str = db.StringField()
+    python_code: str = db.StringField()
+    tea_code: str = db.StringField()
+
+    def to_json(self):
+        return {
+            "uuid": self.uuid,
+            "r_code": self.r_code,
+            "python_code": self.python_code
+        }
+
+
+class ReportText(db.Document):
+    uuid: str = db.StringField()
+    text: str = db.StringField()
+
+    def to_json(self):
+        return {
+            "uuid": self.uuid,
+            "text": self.text
+        }
+
+
+class Record(db.Document):
+    user_id: str = db.StringField()
+    preregistration_id: str = db.StringField()
+    code_id: str = db.StringField()
+    text_id: str = db.StringField()
+
+    def to_json(self):
+        return {
+            "user_id": self.uuid,
+            "preregistration_id": self.text,
+            "code_id": self.code_id,
+            "text_id": self.text_id
+        }
+
+
+def createPreregistration(uuid, record):
+    preregistration = Preregistration(
+        uuid=uuid,
+        question_1=record['question_1'],
+        question_2=record['question_2'],
+        question_3=record['question_3'],
+        question_4=record['question_4'],
+        question_5=record['question_5'],
+        question_6=record['question_6'],
+        question_7=record['question_7'],
+    )
+    logging.info("Preregistration saved ...")
+    return preregistration
+
+
+def createCode(uuid, record):
+    code = AnalysisCode(
+        uuid=uuid,
+        r_code=record["r_code"],
+        python_code=record["python_code"]
+    )
+    logging.info("Code Saved ...")
+    return code
+
+
+def createText(uuid, record):
+    text = ReportText(
+        uuid=uuid,
+        text=record["text"]
+    )
+    logging.info("Text Saved ...")
+    return text
+
+def create_record(data):
+    logging.warning("Creating Record ...")
+    preregistration = data["preregistration"]
+    code = data["code"]
+    text = data["text"]
+
+    user_id = str(uuid.uuid4())
+    preregistration_id = str(uuid.uuid4())
+    code_id = str(uuid.uuid4())
+    text_id = str(uuid.uuid4())
+
+    record = Record(
+        user_id=user_id,
+        preregistration_id=preregistration_id,
+        code_id=code_id,
+        text_id=text_id
+    )
+    logging.info("Record saved...")
+
+    preregis = createPreregistration(preregistration_id, preregistration)
+    code = createCode(code_id, code)
+    text = createText(text_id, text)
+
+    preregis.save()
+    code.save()
+    text.save()
+    record.save()
+
+    return jsonify({'status': http.HTTPStatus.OK})
+
 if __name__ == "__main__":
-    app.debug = True
-    app.run(host='127.0.0.1', port='5000')
+    app.run()

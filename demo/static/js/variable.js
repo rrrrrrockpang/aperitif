@@ -101,16 +101,16 @@ const INDEPENDENT_T_TEST = "Independent samples t-test",
     SPEARMAN_rho = "Spearman's rho";
 
 const IsParametricDic = {
-    INDEPENDENT_T_TEST: true,
-    ONEWAY_ANOVA: true,
-    ONE_WAY_REPEATED_MEASURES_ANOVA: true,
-    PAIRED_SAMPLES_T_TEST: true,
-    MANNWHITNEY_U_TEST: false,
-    KRUSKAL_WALLIS_TEST: false,
-    WILCOXON_SIGNED_RANK_TEST: false,
-    WELCH_T_TEST: false,
-    FRIEDMAN_TEST: false,
-    PEARSON_R: true,
-    KENDALL_TAU: false,
-    SPEARMAN_rho: false
+    "Independent samples t-test": true,
+    "One-way ANOVA": true,
+    "One-way repeated measures ANOVA": true,
+    "Paired-samples t-test": true,
+    "Mann-Whitney U test": false,
+    "Kruskal-Wallis test": false,
+    "Wilcoxon signed-rank test": false,
+    "Welch's t-test": false,
+    "Friedman test": false,
+    "Pearson's r": true,
+    "Kendall's tau": false,
+    "Spearman's rho": false
 }
