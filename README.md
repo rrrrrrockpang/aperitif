@@ -1,6 +1,6 @@
 # Apéritif
 
-## [WIP] Apéiritf: Scaffolding Preregistration to Automatically Generate Analysis Code and Methods Descriptions
+## Apéiritf: Scaffolding Preregistration to Automatically Generate Analysis Code and Methods Descriptions
 
 Apéritif is a research prototype that builds on top of the [AsPredicted](https://aspredicted.org/) preregistration template. The core idea is an initial attempt to connect preregisteration to later experimental stages such as data analysis and methods descriptions, using existing study design tools such as [Tea](https://github.com/tea-lang-org/tea-lang) and [Touchstone2](https://www.touchstone2.org/). 
 
